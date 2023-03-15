@@ -1,58 +1,160 @@
 <template>
-  <div class="hello">
-    <h1>{{ msg }}</h1>
-    <p>
-      For a guide and recipes on how to configure / customize this project,<br>
-      check out the
-      <a href="https://cli.vuejs.org" target="_blank" rel="noopener">vue-cli documentation</a>.
-    </p>
-    <h3>Installed CLI Plugins</h3>
-    <ul>
-      <li><a href="https://github.com/vuejs/vue-cli/tree/dev/packages/%40vue/cli-plugin-babel" target="_blank" rel="noopener">babel</a></li>
-      <li><a href="https://github.com/vuejs/vue-cli/tree/dev/packages/%40vue/cli-plugin-pwa" target="_blank" rel="noopener">pwa</a></li>
-    </ul>
-    <h3>Essential Links</h3>
-    <ul>
-      <li><a href="https://vuejs.org" target="_blank" rel="noopener">Core Docs</a></li>
-      <li><a href="https://forum.vuejs.org" target="_blank" rel="noopener">Forum</a></li>
-      <li><a href="https://chat.vuejs.org" target="_blank" rel="noopener">Community Chat</a></li>
-      <li><a href="https://twitter.com/vuejs" target="_blank" rel="noopener">Twitter</a></li>
-      <li><a href="https://news.vuejs.org" target="_blank" rel="noopener">News</a></li>
-    </ul>
-    <h3>Ecosystem</h3>
-    <ul>
-      <li><a href="https://router.vuejs.org" target="_blank" rel="noopener">vue-router</a></li>
-      <li><a href="https://vuex.vuejs.org" target="_blank" rel="noopener">vuex</a></li>
-      <li><a href="https://github.com/vuejs/vue-devtools#vue-devtools" target="_blank" rel="noopener">vue-devtools</a></li>
-      <li><a href="https://vue-loader.vuejs.org" target="_blank" rel="noopener">vue-loader</a></li>
-      <li><a href="https://github.com/vuejs/awesome-vue" target="_blank" rel="noopener">awesome-vue</a></li>
-    </ul>
+  <div class="chat-container">
+    <div class="chat-history">
+      <div v-for="message in messages" :key="message.id" class ="message-box" :class="message.type">{{ message.text }}</div>
+      <div class="message"></div>
+    </div>
+    <div class="chat-input">
+      <input type="text" v-model="input" @keyup.enter="gptRequest" placeholder="请输入内容" />
+      <button v-on:click="gptRequest()">发送</button>
+    </div>
   </div>
 </template>
 
 <script>
+import axios from 'axios'
 export default {
   name: 'HelloWorld',
   props: {
     msg: String
-  }
+  },
+  data() {
+    return {
+      input: "",
+      messages: [],
+      id:0
+    }
+  },
+  methods: {
+    
+    gptRequest() {
+      const data = JSON.stringify({
+        "model": "gpt-3.5-turbo",
+        "messages": [
+          {
+            "role": "user",
+            "content": this.input
+          }
+        ]
+      });
+      this.messages.push({
+        id: this.id++,
+        text: this.input,
+        type:"sent",
+      })
+      this.input = ""
+      const config = {
+        method: 'post',
+        url: 'https://api.openai.com/v1/chat/completions',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer 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'
+        },
+        data: data,
+        proxy: {
+          host: "127.0.0.1",
+          port: 17890
+        }
+      };
+
+      axios(config)
+        .then(response => {
+          const text = response.data.choices[0].message.content;
+          const formattedText = text.replace(/\n/g, "<br>")
+          // document.getElementById("message").innerHTML = formattedText
+          this.messages.push({
+            id: this.id++,
+            text: formattedText,
+            type:"received",
+          })
+        })
+        .catch(error => {
+          console.log(error);
+        });
+    },
+
+
+  },
 }
 </script>
-
-<!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
-h3 {
-  margin: 40px 0 0;
+.chat-container {
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  position: fixed;
+  background-color: #1d082b;
 }
-ul {
-  list-style-type: none;
-  padding: 0;
+
+.chat-history {
+  overflow-y: auto;
+  /* position: fixed; */
+  /* top: 20%; */
+  height: 90%;
+  /* width: 100%; */
+  /* justify-content: center; */
 }
-li {
-  display: inline-block;
-  margin: 0 10px;
+
+.message-box {
+  width: auto;
+  background-color: #fff;
+  border-radius: 10px;
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, .1);
+  margin: 10px;
+  padding: 10px;
 }
-a {
-  color: #42b983;
+
+.sent { 
+  background-color: rgb(125, 63, 124); 
+  align-self: flex-end; 
+  color: antiquewhite;
+}
+
+.received { 
+  color: rgb(1, 0, 0);
+  background-color: rgb(189, 180, 189); 
+} 
+.chat-input {
+  position: fixed;
+  bottom: 0%;
+  height: 10%;
+  left: 0;
+  right: 0;
+  margin: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #431650;
+}
+
+input[type="text"] {
+  font-size: large;
+  width: 50%;
+  height: 40%;
+  padding: 10px;
+  border-radius: 10px;
+  border: none;
+  outline: none;
+  box-shadow: 2px 5px 5px rgba(0, 0, 0, .1);
+  margin-right: 10px;
+}
+
+button {
+  height: 60%;
+  width: 5%;
+  font-size: large;
+  padding: 5px;
+  border-radius: 30px;
+  border: none;
+  outline: none;
+  background-color: #007aff;
+  color: #fff;
+  cursor: pointer;
+  transition: background-color .2s;
+}
+
+button:hover {
+  background-color: #0069d9;
 }
 </style>
