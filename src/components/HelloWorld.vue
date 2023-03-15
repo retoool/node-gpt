@@ -1,8 +1,7 @@
 <template>
   <div class="chat-container">
     <div class="chat-history">
-      <div v-for="message in messages" :key="message.id" class ="message-box" :class="message.type">{{ message.text }}</div>
-      <div class="message"></div>
+      <div v-for="message in messages" :key="message.id" class ="message-box" :class="message.type" v-html="message.text"></div>
     </div>
     <div class="chat-input">
       <input type="text" v-model="input" @keyup.enter="gptRequest" placeholder="请输入内容" />
@@ -28,6 +27,9 @@ export default {
   methods: {
     
     gptRequest() {
+      if (this.input == "") {
+        return
+      }
       const data = JSON.stringify({
         "model": "gpt-3.5-turbo",
         "messages": [
@@ -48,28 +50,32 @@ export default {
         url: 'https://api.openai.com/v1/chat/completions',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer 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'
+          'Authorization': 'Bearer apikey'
         },
-        data: data,
-        proxy: {
-          host: "127.0.0.1",
-          port: 17890
-        }
+        data: data
       };
 
       axios(config)
         .then(response => {
-          const text = response.data.choices[0].message.content;
-          const formattedText = text.replace(/\n/g, "<br>")
-          // document.getElementById("message").innerHTML = formattedText
+          console.log(response);
+          var result = response.data.choices[0].message.content;
+          if (result.substr(0, 2) == "\n\n") {
+            result = result.substr(2,result.length-2)
+          }
+          result = result.replace(/\n/g, '<br>')
           this.messages.push({
             id: this.id++,
-            text: formattedText,
+            text: result,
             type:"received",
           })
         })
         .catch(error => {
           console.log(error);
+          this.messages.push({
+            id: this.id++,
+            text: error,
+            type:"received",
+          })
         });
     },
 
@@ -136,25 +142,27 @@ input[type="text"] {
   border-radius: 10px;
   border: none;
   outline: none;
-  box-shadow: 2px 5px 5px rgba(0, 0, 0, .1);
+  box-shadow: 2px 5px 5px rgba(19, 31, 74, 0.1);
   margin-right: 10px;
+  background-color: rgb(189, 180, 189);
 }
 
 button {
   height: 60%;
-  width: 5%;
+  width: 80px;
   font-size: large;
   padding: 5px;
-  border-radius: 30px;
+  border-radius: 20px;
   border: none;
   outline: none;
-  background-color: #007aff;
-  color: #fff;
+  background-color: #896fd8;
+  color: #f0daff;
   cursor: pointer;
   transition: background-color .2s;
 }
 
 button:hover {
-  background-color: #0069d9;
+  background-color: #25c5a0;
+  color:antiquewhite;
 }
 </style>
